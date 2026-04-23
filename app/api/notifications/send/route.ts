@@ -58,11 +58,11 @@ export async function POST(req: NextRequest) {
             const settings = settingsSnap.empty ? null : settingsSnap.docs[0].data();
 
             // Si desactivó notificaciones push saltar
-            if (settings?.notificacionesPush === false) continue;
+            if (!settings || settings?.notificacionesPush === false) continue;
 
             const notifications: { title: string; body: string }[] = [];
 
-            if (settings?.recordatorioVacunas !== false && vacunasProximas.length > 0) {
+            if (settings?.recordatorioVacunas === true && vacunasProximas.length > 0) {
                 notifications.push({
                     title: "💉 Vacunas próximas",
                     body: `Tenés ${vacunasProximas.length} vacuna${vacunasProximas.length > 1 ? "s" : ""} pendiente${vacunasProximas.length > 1 ? "s" : ""} esta semana`,
