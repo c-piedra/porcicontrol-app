@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useStore } from "@/store";
 import { fmt, fmtDate, METODO_PAGO_LABEL, generateFacturaNum, whatsappLink } from "@/lib/utils";
 import { Badge, Sheet, Input, Select, EmptyState, ConfirmDialog } from "@/components/ui";
@@ -25,7 +25,7 @@ export function PagosScreen() {
         ventaId: "", monto: "", metodoPago: "efectivo",
         referencia: "", notas: "",
     });
-    
+
     const handleSubmit = () => {
         if (!form.ventaId || !form.monto) return;
         const venta = ventas.find((v) => v.id === form.ventaId);
@@ -202,7 +202,6 @@ export function ClientesScreen() {
 
     return (
         <div className="page fade-in">
-
             <button
                 className="btn btn-primary"
                 style={{ width: "100%", marginBottom: "var(--space-4)" }}
@@ -379,7 +378,6 @@ export function FacturasScreen() {
 
     return (
         <div className="page fade-in">
-
             <button
                 className="btn btn-primary"
                 style={{ width: "100%", marginBottom: "var(--space-4)" }}
@@ -412,7 +410,6 @@ export function FacturasScreen() {
                                 </div>
                                 <Badge estado={f.estado} />
                             </div>
-
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                 <span style={{
                                     fontFamily: "var(--font-display)", fontWeight: 800,
@@ -472,6 +469,8 @@ export function AjustesScreen() {
     const { settings, updateSettings } = useStore();
     const { user, logout } = useAuth();
     const { permission, subscribed, loading, subscribe, unsubscribe } = usePushNotifications();
+
+    // Sincronizar toggles cuando notificaciones están activas
 
 
     const Toggle = ({
@@ -542,7 +541,8 @@ export function AjustesScreen() {
                     </p>
                 </div>
             </div>
-            {/* Notificaciones push */}
+
+            {/* Notificaciones al celular */}
             <p className="section-title" style={{ marginBottom: "var(--space-3)" }}>
                 Notificaciones al celular
             </p>
@@ -567,6 +567,7 @@ export function AjustesScreen() {
                     </button>
                 )}
             </div>
+
             {/* Nombre granja */}
             <div className="input-group">
                 <label className="input-label">Nombre de la granja</label>
@@ -582,21 +583,27 @@ export function AjustesScreen() {
                 El nombre se guarda automáticamente al salir del campo.
             </p>
 
-            {/* Notificaciones */}
+            {/* Toggles notificaciones */}
             <p className="section-title" style={{ marginBottom: "var(--space-3)" }}>Notificaciones</p>
             <div className="card" style={{ marginBottom: "var(--space-4)" }}>
                 <Toggle
-                    value={settings.notificacionesPush}
-                    onChange={(v) => updateSettings({ notificacionesPush: v })}
+                    value={subscribed ? true : settings.notificacionesPush}
+                    onChange={(v) => {
+                        if (!subscribed && v) {
+                            subscribe();
+                        } else {
+                            updateSettings({ notificacionesPush: v });
+                        }
+                    }}
                     label="Notificaciones push"
                 />
                 <Toggle
-                    value={settings.recordatorioVacunas}
+                    value={subscribed ? settings.recordatorioVacunas : false}
                     onChange={(v) => updateSettings({ recordatorioVacunas: v })}
                     label="Recordatorio de vacunas"
                 />
                 <Toggle
-                    value={settings.recordatorioPagos}
+                    value={subscribed ? settings.recordatorioPagos : false}
                     onChange={(v) => updateSettings({ recordatorioPagos: v })}
                     label="Recordatorio de pagos"
                 />
@@ -621,7 +628,6 @@ export function AjustesScreen() {
             >
                 Cerrar sesión
             </button>
-
         </div>
     );
 }

@@ -1,38 +1,31 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "./useAuth";
 import { useStore } from "@/store";
+
 export function usePushNotifications() {
     const { user } = useAuth();
     const [permission, setPermission] = useState<NotificationPermission>("default");
     const [subscribed, setSubscribed] = useState(false);
     const [loading, setLoading] = useState(false);
+    const checked = useRef(false);
 
     useEffect(() => {
-        if (typeof window !== "undefined" && "Notification" in window) {
-            setPermission(Notification.permission);
-            if (Notification.permission === "granted") {
-                checkSubscription();
-            }
+        if (checked.current) return;
+        checked.current = true;
+
+        if (typeof window === "undefined" || !("Notification" in window)) return;
+
+        setPermission(Notification.permission);
+
+        if (Notification.permission === "granted") {
+            navigator.serviceWorker.ready
+                .then((reg) => reg.pushManager.getSubscription())
+                .then((sub) => setSubscribed(!!sub))
+                .catch(() => setSubscribed(false));
         }
     }, []);
 
-    const checkSubscription = async () => {
-        try {
-            const reg = await navigator.serviceWorker.ready;
-            const sub = await reg.pushManager.getSubscription();
-            setSubscribed(!!sub);
-        } catch {
-            setSubscribed(false);
-        }
-    };
-    const { updateSettings } = useStore.getState();
-    updateSettings({
-        notificacionesPush: true,
-        recordatorioVacunas: true,
-        recordatorioPagos: true,
-    });
-    
     const subscribe = async () => {
         if (!user) return;
         setLoading(true);
@@ -57,7 +50,6 @@ export function usePushNotifications() {
                 body: JSON.stringify({ subscription: sub, userId: user.uid }),
             });
 
-            // Activar toggles automáticamente
             const { updateSettings } = useStore.getState();
             updateSettings({
                 notificacionesPush: true,
