@@ -1,11 +1,13 @@
 "use client";
+import { useAuth } from "@/hooks/useAuth";
 import { useStore } from "@/store";
 import { fmt, fmtNum, fmtDate } from "@/lib/utils";
 import { Badge, ProgressBar, StatCard } from "@/components/ui";
 import { Layers, ShoppingCart, DollarSign, Syringe, Plus } from "lucide-react";
 
 export default function DashboardScreen() {
-    const { lotes, ventas, getDashboardStats, setActiveTab, usuario } = useStore();
+    const { lotes, ventas, getDashboardStats, setActiveTab } = useStore();
+    const { user } = useAuth();
     const stats = getDashboardStats();
     const lotesActivos = lotes.filter((l) => l.estado === "activo");
     const ventasRecientes = ventas.slice(0, 3);
@@ -25,7 +27,7 @@ export default function DashboardScreen() {
                     color: "var(--color-text)",
                     lineHeight: 1.2,
                 }}>
-                    {usuario.nombre.split(" ")[0]}! 👋
+                    {user?.displayName?.split(" ")[0] ?? "Usuario"}! 👋
                 </h1>
                 <p style={{ fontSize: "var(--text-sm)", color: "var(--color-text-3)", marginTop: 2 }}>
                     Aquí el resumen de tu granja.
