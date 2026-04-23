@@ -91,9 +91,9 @@ export const useStore = create<AppStore>()((set, get) => ({
         idioma: "es",
         moneda: "CRC",
         nombreGranja: "Mi Granja",
-        notificacionesPush: true,
-        recordatorioVacunas: true,
-        recordatorioPagos: true,
+        notificacionesPush: false,
+        recordatorioVacunas: false,
+        recordatorioPagos: false,
     },
 
     // ─── userId ───────────────────────────────────────────────────────────────
