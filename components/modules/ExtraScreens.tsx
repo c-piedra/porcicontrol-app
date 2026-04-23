@@ -2,10 +2,11 @@
 import { useState } from "react";
 import { useStore } from "@/store";
 import { fmt, fmtDate, METODO_PAGO_LABEL, generateFacturaNum, whatsappLink } from "@/lib/utils";
-import { Badge, Sheet, Input, Select, EmptyState } from "@/components/ui";
-import { Plus, MessageCircle, FileText } from "lucide-react";
+import { Badge, Sheet, Input, Select, EmptyState, ConfirmDialog } from "@/components/ui";
+import { Plus, MessageCircle, FileText, Trash2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import Image from "next/image";
+
 // ─── Pagos ────────────────────────────────────────────────────────────────────
 export function PagosScreen() {
     const { pagos, ventas, addPago } = useStore();
@@ -44,8 +45,6 @@ export function PagosScreen() {
 
     return (
         <div className="page fade-in">
-
-            {/* Resumen */}
             <div style={{
                 display: "grid", gridTemplateColumns: "1fr 1fr",
                 gap: "var(--space-3)", marginBottom: "var(--space-5)",
@@ -165,8 +164,9 @@ export function PagosScreen() {
 
 // ─── Clientes ─────────────────────────────────────────────────────────────────
 export function ClientesScreen() {
-    const { clientes, addCliente } = useStore();
+    const { clientes, addCliente, deleteCliente } = useStore();
     const [showForm, setShowForm] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
     const [form, setForm] = useState({
         nombre: "", telefono: "", email: "",
         direccion: "", tipo: "regular", notas: "",
@@ -271,6 +271,13 @@ export function ClientesScreen() {
                                     Correo
                                 </button>
                             )}
+                            <button
+                                className="btn btn-ghost"
+                                style={{ padding: "6px 10px", minHeight: 36 }}
+                                onClick={() => setConfirmDelete(c.id)}
+                            >
+                                <Trash2 size={14} color="var(--color-danger)" />
+                            </button>
                         </div>
                     </div>
                 ))
@@ -318,6 +325,14 @@ export function ClientesScreen() {
                         Guardar cliente
                     </button>
                 </Sheet>
+            )}
+
+            {confirmDelete && (
+                <ConfirmDialog
+                    message="¿Eliminar este cliente? Esta acción no se puede deshacer."
+                    onConfirm={() => { deleteCliente(confirmDelete); setConfirmDelete(null); }}
+                    onCancel={() => setConfirmDelete(null)}
+                />
             )}
         </div>
     );
@@ -455,6 +470,7 @@ export function FacturasScreen() {
 export function AjustesScreen() {
     const { settings, updateSettings } = useStore();
     const { user, logout } = useAuth();
+
     const Toggle = ({
         value, onChange, label,
     }: { value: boolean; onChange: (v: boolean) => void; label: string }) => (
@@ -483,7 +499,6 @@ export function AjustesScreen() {
 
     return (
         <div className="page fade-in">
-
 
             {/* Perfil */}
             <div className="card" style={{
@@ -525,6 +540,7 @@ export function AjustesScreen() {
                 </div>
             </div>
 
+            {/* Nombre granja */}
             <div className="input-group">
                 <label className="input-label">Nombre de la granja</label>
                 <input
@@ -566,18 +582,19 @@ export function AjustesScreen() {
                     textAlign: "center", lineHeight: 1.6,
                 }}>
                     Porcicontrol v1.0.0<br />
-                    Tu granja en orden 🐷<br />
+                    Tu granja en orden 🐷
                 </p>
             </div>
 
             {/* Cerrar sesión */}
             <button
                 className="btn btn-danger"
-                style={{ width: "100%", marginTop: "var(--space-4)", marginBottom: "var(--space-8)" }}
+                style={{ width: "100%", marginBottom: "var(--space-8)" }}
                 onClick={logout}
             >
                 Cerrar sesión
             </button>
+
         </div>
     );
 }

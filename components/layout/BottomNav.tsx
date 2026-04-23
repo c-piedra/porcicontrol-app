@@ -1,13 +1,13 @@
 "use client";
 import { useStore } from "@/store";
-import { LayoutDashboard, Layers, Syringe, ShoppingCart, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Layers, Syringe, ShoppingCart, Users } from "lucide-react";
 
 const NAV_ITEMS = [
     { id: "dashboard", label: "Inicio", Icon: LayoutDashboard },
     { id: "lotes", label: "Lotes", Icon: Layers },
     { id: "vacunas", label: "Salud", Icon: Syringe },
     { id: "ventas", label: "Ventas", Icon: ShoppingCart },
-    { id: "reportes", label: "Reportes", Icon: BarChart3 },
+    { id: "clientes", label: "Clientes", Icon: Users },
 ];
 
 export default function BottomNav() {

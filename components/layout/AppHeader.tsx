@@ -1,5 +1,5 @@
 "use client";
-import { Bell, Settings } from "lucide-react";
+import { Bell, Settings, BarChart3 } from "lucide-react";
 import { useStore } from "@/store";
 
 const PAGE_TITLES: Record<string, string> = {
@@ -36,6 +36,13 @@ export default function AppHeader() {
                     </div>
                 </div>
                 <div style={{ display: "flex", gap: "var(--space-2)" }}>
+                    <button
+                        className="btn-icon btn"
+                        onClick={() => setActiveTab("reportes")}
+                        aria-label="Reportes"
+                    >
+                        <BarChart3 size={18} />
+                    </button>
                     <button
                         className="btn-icon btn"
                         style={{ position: "relative" }}
