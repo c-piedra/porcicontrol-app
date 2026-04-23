@@ -124,68 +124,116 @@ export const useStore = create<AppStore>()((set, get) => ({
         };
     },
 
-    // ─── Lotes ────────────────────────────────────────────────────────────────
+    // ─── Lotes ────────────────────────────────────────────────────────────────────
     addLote: async (lote) => {
-        await lotesService.add(lote);
+        const tempId = uid();
+        // Actualizar UI inmediatamente
+        set((s) => ({ lotes: [{ ...lote, id: tempId }, ...s.lotes] }));
+        // Sincronizar con Firestore en background
+        try {
+            await lotesService.add(lote);
+        } catch (err) {
+            // Revertir si falla
+            set((s) => ({ lotes: s.lotes.filter((l) => l.id !== tempId) }));
+        }
     },
+
     updateLote: async (id, data) => {
-        await lotesService.update(id, data);
+        // Actualizar UI inmediatamente
+        set((s) => ({ lotes: s.lotes.map((l) => l.id === id ? { ...l, ...data } : l) }));
+        // Sincronizar con Firestore en background
+        lotesService.update(id, data).catch(console.error);
     },
+
     deleteLote: async (id) => {
-        await lotesService.delete(id);
+        // Actualizar UI inmediatamente
+        set((s) => ({ lotes: s.lotes.filter((l) => l.id !== id) }));
+        // Sincronizar con Firestore en background
+        lotesService.delete(id).catch(console.error);
     },
+
     addCosto: async (loteId, costo) => {
         const lote = get().lotes.find((l) => l.id === loteId);
         if (!lote) return;
         const nuevoCosto: Costo = { ...costo, id: uid(), loteId };
         const costos = [...lote.costos, nuevoCosto];
         const inversion = lote.inversion + costo.monto;
-        await lotesService.update(loteId, { costos, inversion });
+        // Actualizar UI inmediatamente
+        set((s) => ({
+            lotes: s.lotes.map((l) => l.id === loteId ? { ...l, costos, inversion } : l),
+        }));
+        // Sincronizar con Firestore en background
+        lotesService.update(loteId, { costos, inversion }).catch(console.error);
     },
 
-    // ─── Vacunas ──────────────────────────────────────────────────────────────
+    // ─── Vacunas ──────────────────────────────────────────────────────────────────
     addVacuna: async (v) => {
-        await vacunasService.add(v);
+        const tempId = uid();
+        set((s) => ({ vacunas: [{ ...v, id: tempId }, ...s.vacunas] }));
+        vacunasService.add(v).catch(console.error);
     },
+
     updateVacuna: async (id, data) => {
-        await vacunasService.update(id, data);
+        set((s) => ({ vacunas: s.vacunas.map((v) => v.id === id ? { ...v, ...data } : v) }));
+        vacunasService.update(id, data).catch(console.error);
     },
+
     deleteVacuna: async (id) => {
-        await vacunasService.delete(id);
+        set((s) => ({ vacunas: s.vacunas.filter((v) => v.id !== id) }));
+        vacunasService.delete(id).catch(console.error);
     },
 
-    // ─── Clientes ─────────────────────────────────────────────────────────────
+    // ─── Clientes ─────────────────────────────────────────────────────────────────
     addCliente: async (c) => {
-        await clientesService.add(c);
+        const tempId = uid();
+        set((s) => ({ clientes: [{ ...c, id: tempId }, ...s.clientes] }));
+        clientesService.add(c).catch(console.error);
     },
+
     updateCliente: async (id, data) => {
-        await clientesService.update(id, data);
+        set((s) => ({ clientes: s.clientes.map((c) => c.id === id ? { ...c, ...data } : c) }));
+        clientesService.update(id, data).catch(console.error);
     },
+
     deleteCliente: async (id) => {
-        await clientesService.delete(id);
+        set((s) => ({ clientes: s.clientes.filter((c) => c.id !== id) }));
+        clientesService.delete(id).catch(console.error);
     },
 
-    // ─── Ventas ───────────────────────────────────────────────────────────────
+    // ─── Ventas ───────────────────────────────────────────────────────────────────
     addVenta: async (v) => {
-        await ventasService.add(v);
+        const tempId = uid();
+        set((s) => ({ ventas: [{ ...v, id: tempId }, ...s.ventas] }));
+        ventasService.add(v).catch(console.error);
     },
+
     updateVenta: async (id, data) => {
-        await ventasService.update(id, data);
+        set((s) => ({ ventas: s.ventas.map((v) => v.id === id ? { ...v, ...data } : v) }));
+        ventasService.update(id, data).catch(console.error);
     },
 
-    // ─── Pagos ────────────────────────────────────────────────────────────────
+    // ─── Pagos ────────────────────────────────────────────────────────────────────
     addPago: async (p) => {
-        await pagosService.add(p);
-        await ventasService.update(p.ventaId, { estado: "pagada" });
+        const tempId = uid();
+        set((s) => ({
+            pagos: [{ ...p, id: tempId }, ...s.pagos],
+            ventas: s.ventas.map((v) => v.id === p.ventaId ? { ...v, estado: "pagada" as const } : v),
+        }));
+        pagosService.add(p).catch(console.error);
+        ventasService.update(p.ventaId, { estado: "pagada" }).catch(console.error);
     },
 
-    // ─── Facturas ─────────────────────────────────────────────────────────────
+    // ─── Facturas ─────────────────────────────────────────────────────────────────
     addFactura: async (f) => {
-        await facturasService.add(f);
-        await ventasService.update(f.ventaId, { facturada: true });
+        const tempId = uid();
+        set((s) => ({ facturas: [{ ...f, id: tempId }, ...s.facturas] }));
+        facturasService.add(f).catch(console.error);
+        ventasService.update(f.ventaId, { facturada: true }).catch(console.error);
     },
+
     updateFactura: async (id, data) => {
-        await facturasService.update(id, data);
+        set((s) => ({ facturas: s.facturas.map((f) => f.id === id ? { ...f, ...data } : f) }));
+        facturasService.update(id, data).catch(console.error);
     },
 
     // ─── Settings ─────────────────────────────────────────────────────────────
