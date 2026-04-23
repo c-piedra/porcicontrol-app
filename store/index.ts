@@ -4,6 +4,7 @@ import type { Lote, Vacuna, Cliente, Venta, Pago, Factura, Usuario, AppSettings,
 import {
     lotesService, vacunasService, clientesService,
     ventasService, pagosService, facturasService,
+    settingsService,
 } from "@/lib/firestore";
 
 interface AppStore {
@@ -17,9 +18,12 @@ interface AppStore {
     settings: AppSettings;
     activeTab: string;
     loading: boolean;
+    userId: string | null;
 
     // Init
     initSubscriptions: () => () => void;
+    setUserId: (id: string | null) => void;
+    loadSettings: (userId: string) => Promise<void>;
 
     // Lotes
     addLote: (lote: Omit<Lote, "id">) => Promise<void>;
@@ -75,6 +79,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     facturas: [],
     loading: false,
     activeTab: "dashboard",
+    userId: null,
     usuario: {
         id: "u1",
         nombre: "José Campos",
@@ -91,7 +96,16 @@ export const useStore = create<AppStore>()((set, get) => ({
         recordatorioPagos: true,
     },
 
-    // ─── Init subscriptions (llamar una vez al montar la app) ─────────────────
+    // ─── userId ───────────────────────────────────────────────────────────────
+    setUserId: (id) => set({ userId: id }),
+
+    // ─── Load settings ────────────────────────────────────────────────────────
+    loadSettings: async (userId) => {
+        const saved = await settingsService.get(userId);
+        if (saved) set((s) => ({ settings: { ...s.settings, ...saved } }));
+    },
+
+    // ─── Init subscriptions ───────────────────────────────────────────────────
     initSubscriptions: () => {
         const unsubLotes = lotesService.subscribe((lotes) => set({ lotes }));
         const unsubVacunas = vacunasService.subscribe((vacunas) => set({ vacunas }));
@@ -114,15 +128,12 @@ export const useStore = create<AppStore>()((set, get) => ({
     addLote: async (lote) => {
         await lotesService.add(lote);
     },
-
     updateLote: async (id, data) => {
         await lotesService.update(id, data);
     },
-
     deleteLote: async (id) => {
         await lotesService.delete(id);
     },
-
     addCosto: async (loteId, costo) => {
         const lote = get().lotes.find((l) => l.id === loteId);
         if (!lote) return;
@@ -136,11 +147,9 @@ export const useStore = create<AppStore>()((set, get) => ({
     addVacuna: async (v) => {
         await vacunasService.add(v);
     },
-
     updateVacuna: async (id, data) => {
         await vacunasService.update(id, data);
     },
-
     deleteVacuna: async (id) => {
         await vacunasService.delete(id);
     },
@@ -149,11 +158,9 @@ export const useStore = create<AppStore>()((set, get) => ({
     addCliente: async (c) => {
         await clientesService.add(c);
     },
-
     updateCliente: async (id, data) => {
         await clientesService.update(id, data);
     },
-
     deleteCliente: async (id) => {
         await clientesService.delete(id);
     },
@@ -162,7 +169,6 @@ export const useStore = create<AppStore>()((set, get) => ({
     addVenta: async (v) => {
         await ventasService.add(v);
     },
-
     updateVenta: async (id, data) => {
         await ventasService.update(id, data);
     },
@@ -178,13 +184,20 @@ export const useStore = create<AppStore>()((set, get) => ({
         await facturasService.add(f);
         await ventasService.update(f.ventaId, { facturada: true });
     },
-
     updateFactura: async (id, data) => {
         await facturasService.update(id, data);
     },
 
     // ─── Settings ─────────────────────────────────────────────────────────────
-    updateSettings: (s) => set((state) => ({ settings: { ...state.settings, ...s } })),
+    updateSettings: (s) => {
+        set((state) => {
+            const newSettings = { ...state.settings, ...s };
+            if (state.userId) {
+                settingsService.save(state.userId, s);
+            }
+            return { settings: newSettings };
+        });
+    },
     setActiveTab: (tab) => set({ activeTab: tab }),
 
     // ─── Stats ────────────────────────────────────────────────────────────────

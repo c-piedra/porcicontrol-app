@@ -36,6 +36,9 @@ export default function AppPage() {
 
   useEffect(() => {
     if (!user) return;
+    const { setUserId, loadSettings, initSubscriptions } = useStore.getState();
+    setUserId(user.uid);
+    loadSettings(user.uid);
     const unsubscribe = initSubscriptions();
     return () => unsubscribe();
   }, [user]);

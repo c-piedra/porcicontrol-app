@@ -3,7 +3,7 @@ import {
     getDocs, onSnapshot, query, orderBy, serverTimestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { Lote, Vacuna, Cliente, Venta, Pago, Factura } from "@/types";
+import type { Lote, Vacuna, Cliente, Venta, Pago, Factura, AppSettings } from "@/types";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const col = (name: string) => collection(db, name);
@@ -142,5 +142,30 @@ export const facturasService = {
             query(col("facturas"), orderBy("fecha", "desc")),
             (snap) => callback(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Factura)))
         );
+    },
+};
+// ─── Settings ─────────────────────────────────────────────────────────────────
+export const settingsService = {
+    async get(userId: string): Promise<Partial<AppSettings> | null> {
+        try {
+            const ref = doc(db, "users", userId, "settings", "main");
+            const snap = await getDocs(collection(db, "users", userId, "settings"));
+            if (snap.empty) return null;
+            return snap.docs[0].data() as Partial<AppSettings>;
+        } catch {
+            return null;
+        }
+    },
+
+    async save(userId: string, settings: Partial<AppSettings>): Promise<void> {
+        try {
+            const ref = doc(db, "users", userId, "settings", "main");
+            await updateDoc(ref, cleanData(settings));
+        } catch {
+            await addDoc(
+                collection(db, "users", userId, "settings"),
+                { ...cleanData(settings), id: "main" }
+            );
+        }
     },
 };

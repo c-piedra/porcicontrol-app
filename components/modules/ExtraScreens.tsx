@@ -525,50 +525,19 @@ export function AjustesScreen() {
                 </div>
             </div>
 
-            {/* Granja */}
-            <p className="section-title" style={{ marginBottom: "var(--space-3)" }}>Mi granja</p>
-            <div className="card" style={{ marginBottom: "var(--space-4)" }}>
-                <div className="input-group">
-                    <label className="input-label">Nombre de la granja</label>
-                    <input
-                        className="input"
-                        value={settings.nombreGranja}
-                        onChange={(e) => updateSettings({ nombreGranja: e.target.value })}
-                    />
-                </div>
-                <div style={{ display: "flex", gap: "var(--space-3)" }}>
-                    {["CRC", "USD"].map((m) => (
-                        <button
-                            key={m}
-                            className={`btn ${settings.moneda === m ? "btn-primary" : "btn-ghost"}`}
-                            style={{ flex: 1, fontSize: "var(--text-sm)" }}
-                            onClick={() => updateSettings({ moneda: m as any })}
-                        >
-                            {m === "CRC" ? "₡ Colones" : "$ Dólares"}
-                        </button>
-                    ))}
-                </div>
+            <div className="input-group">
+                <label className="input-label">Nombre de la granja</label>
+                <input
+                    className="input"
+                    value={settings.nombreGranja}
+                    onChange={(e) => updateSettings({ nombreGranja: e.target.value })}
+                    onBlur={(e) => updateSettings({ nombreGranja: e.target.value })}
+                    placeholder="Nombre de tu granja"
+                />
             </div>
-
-            {/* Idioma */}
-            <p className="section-title" style={{ marginBottom: "var(--space-3)" }}>Idioma</p>
-            <div className="card" style={{ marginBottom: "var(--space-4)" }}>
-                <div style={{ display: "flex", gap: "var(--space-3)" }}>
-                    {[
-                        { v: "es", label: "🇨🇷 Español" },
-                        { v: "en", label: "🇺🇸 English" },
-                    ].map(({ v, label }) => (
-                        <button
-                            key={v}
-                            className={`btn ${settings.idioma === v ? "btn-primary" : "btn-ghost"}`}
-                            style={{ flex: 1, fontSize: "var(--text-sm)" }}
-                            onClick={() => updateSettings({ idioma: v as any })}
-                        >
-                            {label}
-                        </button>
-                    ))}
-                </div>
-            </div>
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-3)", marginTop: -8, marginBottom: "var(--space-3)" }}>
+                El nombre se guarda automáticamente al salir del campo.
+            </p>
 
             {/* Notificaciones */}
             <p className="section-title" style={{ marginBottom: "var(--space-3)" }}>Notificaciones</p>
@@ -598,7 +567,6 @@ export function AjustesScreen() {
                 }}>
                     Porcicontrol v1.0.0<br />
                     Tu granja en orden 🐷<br />
-                    <span style={{ color: "var(--color-primary)" }}>PWA — Disponible sin conexión</span>
                 </p>
             </div>
 

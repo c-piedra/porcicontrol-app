@@ -17,13 +17,13 @@ const PAGE_TITLES: Record<string, string> = {
 export default function AppHeader() {
     const { activeTab, setActiveTab, vacunas } = useStore();
     const proximas = vacunas.filter((v) => v.estado === "proxima").length;
-
+    const { settings } = useStore();
     if (activeTab === "dashboard") {
         return (
             <header className="app-header">
                 <div>
                     <div style={{ fontSize: "var(--text-xs)", color: "var(--color-text-3)" }}>
-                        Tu granja en orden
+                        {settings.nombreGranja}
                     </div>
                     <div style={{
                         fontFamily: "var(--font-display)",
