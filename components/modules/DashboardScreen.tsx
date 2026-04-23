@@ -11,7 +11,12 @@ export default function DashboardScreen() {
     const stats = getDashboardStats();
     const lotesActivos = lotes.filter((l) => l.estado === "activo");
     const ventasRecientes = ventas.slice(0, 3);
-
+    const calcDiasEngorde = (fechaIngreso: string) => {
+        const ingreso = new Date(fechaIngreso + "T00:00:00");
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        return Math.floor((hoy.getTime() - ingreso.getTime()) / (1000 * 60 * 60 * 24));
+    };
     return (
         <div className="page fade-in">
 
@@ -178,7 +183,7 @@ export default function DashboardScreen() {
                                     {lote.nombre}
                                 </p>
                                 <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-3)", marginTop: 2 }}>
-                                    {lote.chanchos} chanchos · {lote.diasEngorde} días · {lote.pesoPromedio} kg prom.
+                                    {lote.chanchos} chanchos · {calcDiasEngorde(lote.fechaIngreso)} días · {lote.pesoPromedio} kg prom.
                                 </p>
                             </div>
                             <Badge estado={lote.estado} />
