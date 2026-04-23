@@ -7,11 +7,12 @@ import {
     XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, Legend,
 } from "recharts";
-
+import { exportarReporteExcel, generarMensajeResumen } from "@/lib/exportUtils";
+import { Download, MessageCircle } from "lucide-react";
 const CHART_COLORS = ["#22c55e", "#86efac", "#f59e0b", "#3b82f6", "#a855f7", "#ef4444"];
 
 export default function ReportesScreen() {
-    const { lotes, ventas, vacunas } = useStore();
+    const { lotes, ventas, vacunas, pagos, clientes, settings } = useStore();
     const [tab, setTab] = useState<"ventas" | "inversion" | "lotes">("ventas");
 
     // Ventas por mes
@@ -80,9 +81,38 @@ export default function ReportesScreen() {
         );
     };
 
+    const handleExportExcel = () => {
+        exportarReporteExcel(lotes, ventas, pagos, clientes, settings.nombreGranja);
+    };
+
+    const handleWhatsApp = () => {
+        const mensaje = generarMensajeResumen(lotes, ventas, pagos, settings.nombreGranja);
+        window.open(`https://wa.me/?text=${encodeURIComponent(mensaje)}`, "_blank");
+    };
     return (
         <div className="page fade-in">
-
+            {/* Exportar */}
+            <div style={{
+                display: "grid", gridTemplateColumns: "1fr 1fr",
+                gap: "var(--space-3)", marginBottom: "var(--space-5)",
+            }}>
+                <button
+                    className="btn btn-primary"
+                    style={{ width: "100%", flexDirection: "column", gap: 4, minHeight: 64 }}
+                    onClick={handleExportExcel}
+                >
+                    <Download size={20} />
+                    <span style={{ fontSize: "var(--text-xs)" }}>Exportar Excel</span>
+                </button>
+                <button
+                    className="btn btn-secondary"
+                    style={{ width: "100%", flexDirection: "column", gap: 4, minHeight: 64 }}
+                    onClick={handleWhatsApp}
+                >
+                    <MessageCircle size={20} color="#25D366" />
+                    <span style={{ fontSize: "var(--text-xs)" }}>Enviar WhatsApp</span>
+                </button>
+            </div>
             {/* KPIs */}
             <div style={{
                 display: "grid", gridTemplateColumns: "1fr 1fr",
