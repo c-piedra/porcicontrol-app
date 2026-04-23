@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useAuth } from "./useAuth";
-
+import { useStore } from "@/store";
 export function usePushNotifications() {
     const { user } = useAuth();
     const [permission, setPermission] = useState<NotificationPermission>("default");
@@ -26,21 +26,24 @@ export function usePushNotifications() {
             setSubscribed(false);
         }
     };
-
+    const { updateSettings } = useStore.getState();
+    updateSettings({
+        notificacionesPush: true,
+        recordatorioVacunas: true,
+        recordatorioPagos: true,
+    });
+    
     const subscribe = async () => {
         if (!user) return;
         setLoading(true);
         try {
-            // Pedir permiso
             const perm = await Notification.requestPermission();
             setPermission(perm);
             if (perm !== "granted") return;
 
-            // Registrar service worker
             const reg = await navigator.serviceWorker.register("/sw-notifications.js");
             await navigator.serviceWorker.ready;
 
-            // Suscribir al push
             const sub = await reg.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(
@@ -48,11 +51,18 @@ export function usePushNotifications() {
                 ),
             });
 
-            // Guardar en Firestore
             await fetch("/api/notifications/subscribe", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ subscription: sub, userId: user.uid }),
+            });
+
+            // Activar toggles automáticamente
+            const { updateSettings } = useStore.getState();
+            updateSettings({
+                notificacionesPush: true,
+                recordatorioVacunas: true,
+                recordatorioPagos: true,
             });
 
             setSubscribed(true);

@@ -1,5 +1,5 @@
 import {
-    collection, doc, addDoc, updateDoc, deleteDoc,
+    collection, doc, addDoc, updateDoc, deleteDoc, setDoc,
     getDocs, onSnapshot, query, orderBy, serverTimestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
@@ -162,10 +162,15 @@ export const settingsService = {
             const ref = doc(db, "users", userId, "settings", "main");
             await updateDoc(ref, cleanData(settings));
         } catch {
-            await addDoc(
-                collection(db, "users", userId, "settings"),
-                { ...cleanData(settings), id: "main" }
-            );
+            try {
+                await setDoc(
+                    doc(db, "users", userId, "settings", "main"),
+                    cleanData(settings),
+                    { merge: true }
+                );
+            } catch (err) {
+                console.error("Error guardando settings:", err);
+            }
         }
     },
 };
