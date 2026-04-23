@@ -4,7 +4,8 @@ import { useStore } from "@/store";
 import { fmt, fmtDate, METODO_PAGO_LABEL, generateFacturaNum, whatsappLink } from "@/lib/utils";
 import { Badge, Sheet, Input, Select, EmptyState } from "@/components/ui";
 import { Plus, MessageCircle, FileText } from "lucide-react";
-
+import { useAuth } from "@/hooks/useAuth";
+import Image from "next/image";
 // ─── Pagos ────────────────────────────────────────────────────────────────────
 export function PagosScreen() {
     const { pagos, ventas, addPago } = useStore();
@@ -452,8 +453,8 @@ export function FacturasScreen() {
 
 // ─── Ajustes ──────────────────────────────────────────────────────────────────
 export function AjustesScreen() {
-    const { settings, updateSettings, usuario } = useStore();
-
+    const { settings, updateSettings } = useStore();
+    const { user, logout } = useAuth();
     const Toggle = ({
         value, onChange, label,
     }: { value: boolean; onChange: (v: boolean) => void; label: string }) => (
@@ -483,32 +484,43 @@ export function AjustesScreen() {
     return (
         <div className="page fade-in">
 
+
             {/* Perfil */}
             <div className="card" style={{
                 marginBottom: "var(--space-4)",
                 display: "flex", gap: "var(--space-4)", alignItems: "center",
             }}>
-                <div style={{
-                    width: 56, height: 56, borderRadius: "50%",
-                    background: "var(--color-primary-glow)",
-                    display: "grid", placeItems: "center",
-                    fontFamily: "var(--font-display)", fontWeight: 800,
-                    fontSize: "var(--text-xl)", color: "var(--color-primary)",
-                }}>
-                    {usuario.nombre[0]}
-                </div>
-                <div>
+                {user?.photoURL ? (
+                    <Image
+                        src={user.photoURL}
+                        alt="Avatar"
+                        width={56}
+                        height={56}
+                        style={{ borderRadius: "50%", objectFit: "cover" }}
+                    />
+                ) : (
+                    <div style={{
+                        width: 56, height: 56, borderRadius: "50%",
+                        background: "var(--color-primary-glow)",
+                        display: "grid", placeItems: "center",
+                        fontFamily: "var(--font-display)", fontWeight: 800,
+                        fontSize: "var(--text-xl)", color: "var(--color-primary)",
+                    }}>
+                        {user?.displayName?.[0] ?? "U"}
+                    </div>
+                )}
+                <div style={{ flex: 1 }}>
                     <p style={{
                         fontFamily: "var(--font-display)", fontWeight: 700,
                         fontSize: "var(--text-base)", color: "var(--color-text)",
                     }}>
-                        {usuario.nombre}
+                        {user?.displayName ?? "Usuario"}
                     </p>
                     <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-3)" }}>
-                        {usuario.email}
+                        {user?.email}
                     </p>
                     <p style={{ fontSize: "var(--text-xs)", color: "var(--color-primary)", fontWeight: 600, marginTop: 2 }}>
-                        {usuario.rol === "admin" ? "Administrador" : usuario.rol}
+                        Administrador
                     </p>
                 </div>
             </div>
@@ -579,7 +591,7 @@ export function AjustesScreen() {
             </div>
 
             {/* Info app */}
-            <div className="card">
+            <div className="card" style={{ marginBottom: "var(--space-4)" }}>
                 <p style={{
                     fontSize: "var(--text-xs)", color: "var(--color-text-3)",
                     textAlign: "center", lineHeight: 1.6,
@@ -590,6 +602,14 @@ export function AjustesScreen() {
                 </p>
             </div>
 
+            {/* Cerrar sesión */}
+            <button
+                className="btn btn-danger"
+                style={{ width: "100%", marginTop: "var(--space-4)", marginBottom: "var(--space-8)" }}
+                onClick={logout}
+            >
+                Cerrar sesión
+            </button>
         </div>
     );
 }

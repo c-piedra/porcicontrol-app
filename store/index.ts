@@ -1,7 +1,10 @@
 "use client";
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import type { Lote, Vacuna, Cliente, Venta, Pago, Factura, Usuario, AppSettings, Costo } from "@/types";
+import {
+    lotesService, vacunasService, clientesService,
+    ventasService, pagosService, facturasService,
+} from "@/lib/firestore";
 
 interface AppStore {
     lotes: Lote[];
@@ -13,31 +16,43 @@ interface AppStore {
     usuario: Usuario;
     settings: AppSettings;
     activeTab: string;
+    loading: boolean;
 
-    addLote: (lote: Omit<Lote, "id">) => void;
-    updateLote: (id: string, data: Partial<Lote>) => void;
-    deleteLote: (id: string) => void;
-    addCosto: (loteId: string, costo: Omit<Costo, "id" | "loteId">) => void;
+    // Init
+    initSubscriptions: () => () => void;
 
-    addVacuna: (v: Omit<Vacuna, "id">) => void;
-    updateVacuna: (id: string, data: Partial<Vacuna>) => void;
-    deleteVacuna: (id: string) => void;
+    // Lotes
+    addLote: (lote: Omit<Lote, "id">) => Promise<void>;
+    updateLote: (id: string, data: Partial<Lote>) => Promise<void>;
+    deleteLote: (id: string) => Promise<void>;
+    addCosto: (loteId: string, costo: Omit<Costo, "id" | "loteId">) => Promise<void>;
 
-    addCliente: (c: Omit<Cliente, "id">) => void;
-    updateCliente: (id: string, data: Partial<Cliente>) => void;
-    deleteCliente: (id: string) => void;
+    // Vacunas
+    addVacuna: (v: Omit<Vacuna, "id">) => Promise<void>;
+    updateVacuna: (id: string, data: Partial<Vacuna>) => Promise<void>;
+    deleteVacuna: (id: string) => Promise<void>;
 
-    addVenta: (v: Omit<Venta, "id">) => void;
-    updateVenta: (id: string, data: Partial<Venta>) => void;
+    // Clientes
+    addCliente: (c: Omit<Cliente, "id">) => Promise<void>;
+    updateCliente: (id: string, data: Partial<Cliente>) => Promise<void>;
+    deleteCliente: (id: string) => Promise<void>;
 
-    addPago: (p: Omit<Pago, "id">) => void;
+    // Ventas
+    addVenta: (v: Omit<Venta, "id">) => Promise<void>;
+    updateVenta: (id: string, data: Partial<Venta>) => Promise<void>;
 
-    addFactura: (f: Omit<Factura, "id">) => void;
-    updateFactura: (id: string, data: Partial<Factura>) => void;
+    // Pagos
+    addPago: (p: Omit<Pago, "id">) => Promise<void>;
 
+    // Facturas
+    addFactura: (f: Omit<Factura, "id">) => Promise<void>;
+    updateFactura: (id: string, data: Partial<Factura>) => Promise<void>;
+
+    // Settings
     updateSettings: (s: Partial<AppSettings>) => void;
     setActiveTab: (tab: string) => void;
 
+    // Stats
     getDashboardStats: () => {
         lotesActivos: number;
         totalChanchos: number;
@@ -51,89 +66,141 @@ interface AppStore {
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-export const useStore = create<AppStore>()(
-    persist(
-        (set, get) => ({
-            // ─── Estado inicial vacío ───────────────────────────────────────────────
-            lotes: [],
-            vacunas: [],
-            clientes: [],
-            ventas: [],
-            pagos: [],
-            facturas: [],
-            activeTab: "dashboard",
-            usuario: {
-                id: "u1",
-                nombre: "José Campos",
-                email: "jose@granja.com",
-                rol: "admin",
-                activo: true,
-            },
-            settings: {
-                idioma: "es",
-                moneda: "CRC",
-                nombreGranja: "Mi Granja",
-                notificacionesPush: true,
-                recordatorioVacunas: true,
-                recordatorioPagos: true,
-            },
+export const useStore = create<AppStore>()((set, get) => ({
+    lotes: [],
+    vacunas: [],
+    clientes: [],
+    ventas: [],
+    pagos: [],
+    facturas: [],
+    loading: false,
+    activeTab: "dashboard",
+    usuario: {
+        id: "u1",
+        nombre: "José Campos",
+        email: "jose@granja.com",
+        rol: "admin",
+        activo: true,
+    },
+    settings: {
+        idioma: "es",
+        moneda: "CRC",
+        nombreGranja: "Mi Granja",
+        notificacionesPush: true,
+        recordatorioVacunas: true,
+        recordatorioPagos: true,
+    },
 
-            // ─── Lotes ─────────────────────────────────────────────────────────────
-            addLote: (lote) => set((s) => ({ lotes: [...s.lotes, { ...lote, id: uid() }] })),
-            updateLote: (id, data) => set((s) => ({ lotes: s.lotes.map((l) => l.id === id ? { ...l, ...data } : l) })),
-            deleteLote: (id) => set((s) => ({ lotes: s.lotes.filter((l) => l.id !== id) })),
-            addCosto: (loteId, costo) => set((s) => ({
-                lotes: s.lotes.map((l) => l.id === loteId
-                    ? { ...l, costos: [...l.costos, { ...costo, id: uid(), loteId }], inversion: l.inversion + costo.monto }
-                    : l),
-            })),
+    // ─── Init subscriptions (llamar una vez al montar la app) ─────────────────
+    initSubscriptions: () => {
+        const unsubLotes = lotesService.subscribe((lotes) => set({ lotes }));
+        const unsubVacunas = vacunasService.subscribe((vacunas) => set({ vacunas }));
+        const unsubClientes = clientesService.subscribe((clientes) => set({ clientes }));
+        const unsubVentas = ventasService.subscribe((ventas) => set({ ventas }));
+        const unsubPagos = pagosService.subscribe((pagos) => set({ pagos }));
+        const unsubFacturas = facturasService.subscribe((facturas) => set({ facturas }));
 
-            // ─── Vacunas ───────────────────────────────────────────────────────────
-            addVacuna: (v) => set((s) => ({ vacunas: [...s.vacunas, { ...v, id: uid() }] })),
-            updateVacuna: (id, data) => set((s) => ({ vacunas: s.vacunas.map((v) => v.id === id ? { ...v, ...data } : v) })),
-            deleteVacuna: (id) => set((s) => ({ vacunas: s.vacunas.filter((v) => v.id !== id) })),
+        return () => {
+            unsubLotes();
+            unsubVacunas();
+            unsubClientes();
+            unsubVentas();
+            unsubPagos();
+            unsubFacturas();
+        };
+    },
 
-            // ─── Clientes ──────────────────────────────────────────────────────────
-            addCliente: (c) => set((s) => ({ clientes: [...s.clientes, { ...c, id: uid() }] })),
-            updateCliente: (id, data) => set((s) => ({ clientes: s.clientes.map((c) => c.id === id ? { ...c, ...data } : c) })),
-            deleteCliente: (id) => set((s) => ({ clientes: s.clientes.filter((c) => c.id !== id) })),
+    // ─── Lotes ────────────────────────────────────────────────────────────────
+    addLote: async (lote) => {
+        await lotesService.add(lote);
+    },
 
-            // ─── Ventas ────────────────────────────────────────────────────────────
-            addVenta: (v) => set((s) => ({ ventas: [...s.ventas, { ...v, id: uid() }] })),
-            updateVenta: (id, data) => set((s) => ({ ventas: s.ventas.map((v) => v.id === id ? { ...v, ...data } : v) })),
+    updateLote: async (id, data) => {
+        await lotesService.update(id, data);
+    },
 
-            // ─── Pagos ─────────────────────────────────────────────────────────────
-            addPago: (p) => set((s) => {
-                const pago = { ...p, id: uid() };
-                const ventas = s.ventas.map((v) => v.id === p.ventaId ? { ...v, estado: "pagada" as const } : v);
-                return { pagos: [...s.pagos, pago], ventas };
-            }),
+    deleteLote: async (id) => {
+        await lotesService.delete(id);
+    },
 
-            // ─── Facturas ──────────────────────────────────────────────────────────
-            addFactura: (f) => set((s) => ({ facturas: [...s.facturas, { ...f, id: uid() }] })),
-            updateFactura: (id, data) => set((s) => ({ facturas: s.facturas.map((f) => f.id === id ? { ...f, ...data } : f) })),
+    addCosto: async (loteId, costo) => {
+        const lote = get().lotes.find((l) => l.id === loteId);
+        if (!lote) return;
+        const nuevoCosto: Costo = { ...costo, id: uid(), loteId };
+        const costos = [...lote.costos, nuevoCosto];
+        const inversion = lote.inversion + costo.monto;
+        await lotesService.update(loteId, { costos, inversion });
+    },
 
-            // ─── Settings ──────────────────────────────────────────────────────────
-            updateSettings: (s) => set((state) => ({ settings: { ...state.settings, ...s } })),
-            setActiveTab: (tab) => set({ activeTab: tab }),
+    // ─── Vacunas ──────────────────────────────────────────────────────────────
+    addVacuna: async (v) => {
+        await vacunasService.add(v);
+    },
 
-            // ─── Stats ─────────────────────────────────────────────────────────────
-            getDashboardStats: () => {
-                const { lotes, ventas, vacunas } = get();
-                const activos = lotes.filter((l) => l.estado === "activo");
-                const now = new Date();
-                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-                return {
-                    lotesActivos: activos.length,
-                    totalChanchos: activos.reduce((s, l) => s + l.chanchos, 0),
-                    inversionTotal: activos.reduce((s, l) => s + l.inversion, 0),
-                    gananciasEstimadas: activos.reduce((s, l) => s + (l.valorEstimado - l.inversion), 0),
-                    ventasMes: ventas.filter((v) => new Date(v.fecha) >= startOfMonth).reduce((s, v) => s + v.total, 0),
-                    pendientesCobro: ventas.filter((v) => v.estado !== "pagada" && v.estado !== "cancelada").reduce((s, v) => s + v.total, 0),
-                    vacunasProximas: vacunas.filter((v) => v.estado === "proxima").length,
-                };
-            },
-        }),
-        { name: "porcicontrol-storage" }
-    )
-);
+    updateVacuna: async (id, data) => {
+        await vacunasService.update(id, data);
+    },
+
+    deleteVacuna: async (id) => {
+        await vacunasService.delete(id);
+    },
+
+    // ─── Clientes ─────────────────────────────────────────────────────────────
+    addCliente: async (c) => {
+        await clientesService.add(c);
+    },
+
+    updateCliente: async (id, data) => {
+        await clientesService.update(id, data);
+    },
+
+    deleteCliente: async (id) => {
+        await clientesService.delete(id);
+    },
+
+    // ─── Ventas ───────────────────────────────────────────────────────────────
+    addVenta: async (v) => {
+        await ventasService.add(v);
+    },
+
+    updateVenta: async (id, data) => {
+        await ventasService.update(id, data);
+    },
+
+    // ─── Pagos ────────────────────────────────────────────────────────────────
+    addPago: async (p) => {
+        await pagosService.add(p);
+        await ventasService.update(p.ventaId, { estado: "pagada" });
+    },
+
+    // ─── Facturas ─────────────────────────────────────────────────────────────
+    addFactura: async (f) => {
+        await facturasService.add(f);
+        await ventasService.update(f.ventaId, { facturada: true });
+    },
+
+    updateFactura: async (id, data) => {
+        await facturasService.update(id, data);
+    },
+
+    // ─── Settings ─────────────────────────────────────────────────────────────
+    updateSettings: (s) => set((state) => ({ settings: { ...state.settings, ...s } })),
+    setActiveTab: (tab) => set({ activeTab: tab }),
+
+    // ─── Stats ────────────────────────────────────────────────────────────────
+    getDashboardStats: () => {
+        const { lotes, ventas, vacunas } = get();
+        const activos = lotes.filter((l) => l.estado === "activo");
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        return {
+            lotesActivos: activos.length,
+            totalChanchos: activos.reduce((s, l) => s + l.chanchos, 0),
+            inversionTotal: activos.reduce((s, l) => s + l.inversion, 0),
+            gananciasEstimadas: activos.reduce((s, l) => s + (l.valorEstimado - l.inversion), 0),
+            ventasMes: ventas.filter((v) => new Date(v.fecha) >= startOfMonth).reduce((s, v) => s + v.total, 0),
+            pendientesCobro: ventas.filter((v) => v.estado !== "pagada" && v.estado !== "cancelada").reduce((s, v) => s + v.total, 0),
+            vacunasProximas: vacunas.filter((v) => v.estado === "proxima").length,
+        };
+    },
+}));

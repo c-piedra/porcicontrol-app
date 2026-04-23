@@ -27,8 +27,8 @@ export default function LotesScreen() {
     const [filterEstado, setFilterEstado] = useState("todos");
 
     const [form, setForm] = useState({
-        nombre: "", chanchos: "", pesoInicial: "", pesoPromedio: "",
-        fechaIngreso: new Date().toISOString().split("T")[0],
+        nombre: "", chanchos: "", pesoInicial: "", pesoObjetivo: "",
+        precioKg: "", fechaIngreso: new Date().toISOString().split("T")[0],
         notas: "",
     });
 
@@ -42,8 +42,8 @@ export default function LotesScreen() {
         : lotes.filter((l) => l.estado === filterEstado);
 
     const resetForm = () => setForm({
-        nombre: "", chanchos: "", pesoInicial: "", pesoPromedio: "",
-        fechaIngreso: new Date().toISOString().split("T")[0],
+        nombre: "", chanchos: "", pesoInicial: "", pesoObjetivo: "",
+        precioKg: "", fechaIngreso: new Date().toISOString().split("T")[0],
         notas: "",
     });
 
@@ -51,24 +51,25 @@ export default function LotesScreen() {
         if (!form.nombre || !form.chanchos) return;
         const chanchos = parseInt(form.chanchos);
         const pesoInicial = parseFloat(form.pesoInicial) || 0;
+        const pesoObjetivo = parseFloat(form.pesoObjetivo) || 90;
+        const precioKg = parseFloat(form.precioKg) || 3000;
         addLote({
             nombre: form.nombre,
             chanchos,
             pesoInicial,
-            pesoPromedio: parseFloat(form.pesoPromedio) || pesoInicial,
+            pesoPromedio: pesoInicial,
             fechaIngreso: form.fechaIngreso,
             diasEngorde: 0,
             progreso: 0,
             estado: "activo",
             inversion: 0,
-            valorEstimado: chanchos * pesoInicial * 3000,
+            valorEstimado: chanchos * pesoObjetivo * precioKg,
             notas: form.notas,
             costos: [],
         });
         resetForm();
         setShowForm(false);
     };
-
     const handleAddCosto = () => {
         if (!selected || !costoForm.monto) return;
         addCosto(selected.id, {
@@ -322,6 +323,16 @@ export default function LotesScreen() {
                         label="Peso inicial promedio (kg)" value={form.pesoInicial}
                         onChange={(v) => setForm({ ...form, pesoInicial: v })}
                         type="number" placeholder="20"
+                    />
+                    <Input
+                        label="Peso objetivo (kg)" value={form.pesoObjetivo}
+                        onChange={(v) => setForm({ ...form, pesoObjetivo: v })}
+                        type="number" placeholder="90"
+                    />
+                    <Input
+                        label="Precio estimado por kg (₡)" value={form.precioKg}
+                        onChange={(v) => setForm({ ...form, precioKg: v })}
+                        type="number" placeholder="3000"
                     />
                     <Input
                         label="Fecha de ingreso" value={form.fechaIngreso}
