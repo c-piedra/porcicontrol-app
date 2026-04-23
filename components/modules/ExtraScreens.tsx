@@ -584,6 +584,7 @@ export function AjustesScreen() {
             </p>
 
             {/* Toggles notificaciones */}
+            {/* Notificaciones */}
             <p className="section-title" style={{ marginBottom: "var(--space-3)" }}>Notificaciones</p>
             <div className="card" style={{ marginBottom: "var(--space-4)" }}>
                 <Toggle
@@ -596,16 +597,6 @@ export function AjustesScreen() {
                         }
                     }}
                     label="Notificaciones push"
-                />
-                <Toggle
-                    value={subscribed ? settings.recordatorioVacunas : false}
-                    onChange={(v) => updateSettings({ recordatorioVacunas: v })}
-                    label="Recordatorio de vacunas"
-                />
-                <Toggle
-                    value={subscribed ? settings.recordatorioPagos : false}
-                    onChange={(v) => updateSettings({ recordatorioPagos: v })}
-                    label="Recordatorio de pagos"
                 />
             </div>
 
