@@ -1,10 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useStore } from "@/store";
 import { fmt, fmtDate, CATEGORIAS_COSTO } from "@/lib/utils";
 import { Badge, ProgressBar, Sheet, Input, Select, EmptyState, ConfirmDialog } from "@/components/ui";
 import { Plus, Trash2, DollarSign } from "lucide-react";
 import type { Lote } from "@/types";
+// Sincronizar lote seleccionado con datos del store
 
 const ESTADO_OPTIONS = [
     { value: "activo", label: "Activo" },
@@ -18,6 +19,8 @@ const CATEGORIA_OPTIONS = Object.entries(CATEGORIAS_COSTO).map(([k, v]) => ({
 }));
 
 export default function LotesScreen() {
+
+
     const { lotes, addLote, updateLote, deleteLote, addCosto } = useStore();
 
     const [showForm, setShowForm] = useState(false);
@@ -25,6 +28,17 @@ export default function LotesScreen() {
     const [showCosto, setShowCosto] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
     const [filterEstado, setFilterEstado] = useState("todos");
+
+    useEffect(() => {
+        if (selected) {
+            const updated = lotes.find((l) => l.id === selected.id);
+            if (updated) setSelected(updated);
+        }
+    }, [lotes]);
+
+
+
+
 
     const [form, setForm] = useState({
         nombre: "", chanchos: "", pesoInicial: "", pesoObjetivo: "",
