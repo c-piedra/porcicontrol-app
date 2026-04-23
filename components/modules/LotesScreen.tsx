@@ -84,6 +84,12 @@ export default function LotesScreen() {
         });
         setShowCosto(false);
     };
+    const calcDiasEngorde = (fechaIngreso: string) => {
+        const ingreso = new Date(fechaIngreso + "T00:00:00");
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        return Math.floor((hoy.getTime() - ingreso.getTime()) / (1000 * 60 * 60 * 24));
+    };
 
     return (
         <div className="page fade-in">
@@ -145,7 +151,7 @@ export default function LotesScreen() {
                         }}>
                             {[
                                 ["Peso prom.", `${lote.pesoPromedio} kg`],
-                                ["Días engorde", lote.diasEngorde],
+                                ["Días engorde", calcDiasEngorde(lote.fechaIngreso)],
                                 ["Inversión", fmt(lote.inversion)],
                                 ["Val. estimado", fmt(lote.valorEstimado)],
                             ].map(([label, value]) => (
@@ -190,7 +196,7 @@ export default function LotesScreen() {
                             ["Cantidad", `${selected.chanchos} chanchos`],
                             ["Peso promedio", `${selected.pesoPromedio} kg`],
                             ["Peso inicial", `${selected.pesoInicial} kg`],
-                            ["Días engorde", selected.diasEngorde],
+                            ["Días engorde", calcDiasEngorde(selected.fechaIngreso)],
                             ["Inversión", fmt(selected.inversion)],
                             ["Val. estimado", fmt(selected.valorEstimado)],
                         ].map(([l, v]) => (
