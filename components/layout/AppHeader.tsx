@@ -1,7 +1,7 @@
 "use client";
 import { Bell, Settings, BarChart3 } from "lucide-react";
 import { useStore } from "@/store";
-
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 const PAGE_TITLES: Record<string, string> = {
     dashboard: "Dashboard",
     lotes: "Lotes",
@@ -18,6 +18,7 @@ export default function AppHeader() {
     const { activeTab, setActiveTab, vacunas } = useStore();
     const proximas = vacunas.filter((v) => v.estado === "proxima").length;
     const { settings } = useStore();
+    const { subscribed } = usePushNotifications();
     if (activeTab === "dashboard") {
         return (
             <header className="app-header">
@@ -45,10 +46,11 @@ export default function AppHeader() {
                     </button>
                     <button
                         className="btn-icon btn"
-                        style={{ position: "relative" }}
+
+                        onClick={() => setActiveTab("ajustes")}
                         aria-label="Notificaciones"
                     >
-                        <Bell size={18} />
+                        <Bell size={18} color={subscribed ? "var(--color-primary)" : "var(--color-text-2)"} />
                         {proximas > 0 && (
                             <span style={{
                                 position: "absolute", top: -4, right: -4,

@@ -6,6 +6,7 @@ import { Badge, Sheet, Input, Select, EmptyState, ConfirmDialog } from "@/compon
 import { Plus, MessageCircle, FileText, Trash2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import Image from "next/image";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 // ─── Pagos ────────────────────────────────────────────────────────────────────
 export function PagosScreen() {
@@ -24,7 +25,7 @@ export function PagosScreen() {
         ventaId: "", monto: "", metodoPago: "efectivo",
         referencia: "", notas: "",
     });
-
+    
     const handleSubmit = () => {
         if (!form.ventaId || !form.monto) return;
         const venta = ventas.find((v) => v.id === form.ventaId);
@@ -470,6 +471,8 @@ export function FacturasScreen() {
 export function AjustesScreen() {
     const { settings, updateSettings } = useStore();
     const { user, logout } = useAuth();
+    const { permission, subscribed, loading, subscribe, unsubscribe } = usePushNotifications();
+
 
     const Toggle = ({
         value, onChange, label,
@@ -539,7 +542,31 @@ export function AjustesScreen() {
                     </p>
                 </div>
             </div>
-
+            {/* Notificaciones push */}
+            <p className="section-title" style={{ marginBottom: "var(--space-3)" }}>
+                Notificaciones al celular
+            </p>
+            <div className="card" style={{ marginBottom: "var(--space-4)" }}>
+                <p style={{ fontSize: "var(--text-sm)", color: "var(--color-text-2)", marginBottom: "var(--space-3)" }}>
+                    {subscribed
+                        ? "✅ Notificaciones activadas en este dispositivo."
+                        : "Activa las notificaciones para recibir recordatorios de vacunas y pagos pendientes."}
+                </p>
+                {permission === "denied" ? (
+                    <p style={{ fontSize: "var(--text-xs)", color: "var(--color-danger)" }}>
+                        Bloqueaste las notificaciones. Actívalas desde la configuración del navegador.
+                    </p>
+                ) : (
+                    <button
+                        className={`btn ${subscribed ? "btn-ghost" : "btn-primary"}`}
+                        style={{ width: "100%" }}
+                        onClick={subscribed ? unsubscribe : subscribe}
+                        disabled={loading}
+                    >
+                        {loading ? "Procesando..." : subscribed ? "Desactivar notificaciones" : "Activar notificaciones"}
+                    </button>
+                )}
+            </div>
             {/* Nombre granja */}
             <div className="input-group">
                 <label className="input-label">Nombre de la granja</label>
