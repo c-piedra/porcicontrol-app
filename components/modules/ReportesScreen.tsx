@@ -9,13 +9,13 @@ import {
 } from "recharts";
 import { exportarReporteExcel, generarMensajeResumen } from "@/lib/exportUtils";
 import { Download, MessageCircle } from "lucide-react";
+
 const CHART_COLORS = ["#22c55e", "#86efac", "#f59e0b", "#3b82f6", "#a855f7", "#ef4444"];
 
 export default function ReportesScreen() {
     const { lotes, ventas, vacunas, pagos, clientes, settings } = useStore();
     const [tab, setTab] = useState<"ventas" | "inversion" | "lotes">("ventas");
 
-    // Ventas por mes
     const ventasPorMes = ventas.reduce<Record<string, number>>((acc, v) => {
         const mes = v.fecha.slice(0, 7);
         acc[mes] = (acc[mes] ?? 0) + v.total;
@@ -28,7 +28,6 @@ export default function ReportesScreen() {
             total: Math.round(total / 1000),
         }));
 
-    // Costos por categoría
     const totalCostos = lotes.flatMap((l) => l.costos);
     const costosPorCat = totalCostos.reduce<Record<string, number>>((acc, c) => {
         acc[c.categoria] = (acc[c.categoria] ?? 0) + c.monto;
@@ -39,26 +38,20 @@ export default function ReportesScreen() {
             cat === "compra" ? "Compra" :
                 cat === "alimentacion" ? "Alimento" :
                     cat === "vacunas" ? "Vacunas" :
-                        cat === "medicamentos" ? "Medicamentos" :
-                            "Otros",
+                        cat === "medicamentos" ? "Medicamentos" : "Otros",
         value: Math.round(monto / 1000),
     }));
 
-    // Inversión vs estimado por lote
     const lotesData = lotes.slice(0, 5).map((l) => ({
         name: l.nombre,
         inversion: Math.round(l.inversion / 1000),
         estimado: Math.round(l.valorEstimado / 1000),
     }));
 
-    // KPIs
     const totalVendido = ventas
         .filter((v) => v.estado === "pagada")
         .reduce((s, v) => s + v.total, 0);
     const totalInversion = lotes.reduce((s, l) => s + l.inversion, 0);
-    const roi = totalInversion > 0
-        ? ((totalVendido - totalInversion) / totalInversion * 100).toFixed(1)
-        : "0";
 
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (!active || !payload?.length) return null;
@@ -89,8 +82,10 @@ export default function ReportesScreen() {
         const mensaje = generarMensajeResumen(lotes, ventas, pagos, settings.nombreGranja);
         window.open(`https://wa.me/?text=${encodeURIComponent(mensaje)}`, "_blank");
     };
+
     return (
         <div className="page fade-in">
+
             {/* Exportar */}
             <div style={{
                 display: "grid", gridTemplateColumns: "1fr 1fr",
@@ -113,6 +108,7 @@ export default function ReportesScreen() {
                     <span style={{ fontSize: "var(--text-xs)" }}>Enviar WhatsApp</span>
                 </button>
             </div>
+
             {/* KPIs */}
             <div style={{
                 display: "grid", gridTemplateColumns: "1fr 1fr",
@@ -120,7 +116,6 @@ export default function ReportesScreen() {
             }}>
                 {[
                     { label: "Total vendido", value: fmt(totalVendido), color: "var(--color-primary)" },
-                    { label: "ROI acumulado", value: `${roi}%`, color: "var(--color-accent)" },
                     { label: "Inversión activa", value: fmt(totalInversion), color: "var(--color-warning)" },
                     { label: "Vacunas aplicadas", value: vacunas.filter((v) => v.estado === "aplicada").length, color: "var(--color-info)" },
                 ].map(({ label, value, color }) => (
@@ -158,9 +153,12 @@ export default function ReportesScreen() {
                         <p style={{
                             fontFamily: "var(--font-display)", fontWeight: 700,
                             fontSize: "var(--text-base)", color: "var(--color-text)",
-                            marginBottom: "var(--space-3)",
+                            marginBottom: "var(--space-1)",
                         }}>
                             Ventas por mes (₡ miles)
+                        </p>
+                        <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-3)", marginBottom: "var(--space-3)" }}>
+                            Ingresos por ventas pagadas cada mes. Entre más alta la barra, más vendiste ese mes.
                         </p>
                         {ventasData.length === 0 ? (
                             <p style={{ fontSize: "var(--text-sm)", color: "var(--color-text-3)", textAlign: "center", padding: "var(--space-8) 0" }}>
@@ -186,9 +184,12 @@ export default function ReportesScreen() {
                         <p style={{
                             fontFamily: "var(--font-display)", fontWeight: 700,
                             fontSize: "var(--text-base)", color: "var(--color-text)",
-                            marginBottom: "var(--space-3)",
+                            marginBottom: "var(--space-1)",
                         }}>
                             Distribución de costos
+                        </p>
+                        <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-3)", marginBottom: "var(--space-3)" }}>
+                            En qué categorías estás gastando más. El pedazo más grande es tu mayor gasto.
                         </p>
                         {costosData.length === 0 ? (
                             <p style={{ fontSize: "var(--text-sm)", color: "var(--color-text-3)", textAlign: "center", padding: "var(--space-8) 0" }}>
@@ -206,7 +207,8 @@ export default function ReportesScreen() {
                                                 <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                                             ))}
                                         </Pie>
-                                        <Tooltip formatter={(v) => fmt(Number(v ?? 0) * 1000)} />                                  </PieChart>
+                                        <Tooltip formatter={(v) => fmt(Number(v ?? 0) * 1000)} />
+                                    </PieChart>
                                 </ResponsiveContainer>
                                 <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)", marginTop: "var(--space-3)" }}>
                                     {costosData.map((d, i) => (
@@ -232,9 +234,12 @@ export default function ReportesScreen() {
                         <p style={{
                             fontFamily: "var(--font-display)", fontWeight: 700,
                             fontSize: "var(--text-base)", color: "var(--color-text)",
-                            marginBottom: "var(--space-3)",
+                            marginBottom: "var(--space-1)",
                         }}>
                             Inversión vs Valor estimado (₡ miles)
+                        </p>
+                        <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-3)", marginBottom: "var(--space-3)" }}>
+                            🟡 Naranja = lo que invertiste · 🟢 Verde = lo que esperás recibir al vender
                         </p>
                         {lotesData.length === 0 ? (
                             <p style={{ fontSize: "var(--text-sm)", color: "var(--color-text-3)", textAlign: "center", padding: "var(--space-8) 0" }}>
@@ -264,10 +269,6 @@ export default function ReportesScreen() {
                     Recomendaciones
                 </p>
                 {[
-                    {
-                        icon: "📈",
-                        text: `Tu ROI es ${roi}%. Los mejores productores logran entre 30–40%.`,
-                    },
                     {
                         icon: "🐷",
                         text: `Tienes ${lotes.filter((l) => l.estado === "activo").reduce((s, l) => s + l.chanchos, 0)} chanchos activos. Considera escalar si la demanda lo permite.`,

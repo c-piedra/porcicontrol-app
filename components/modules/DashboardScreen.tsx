@@ -55,12 +55,7 @@ export default function DashboardScreen() {
                         }}>
                             {fmt(stats.gananciasEstimadas)}
                         </p>
-                        <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-3)", marginTop: 4 }}>
-                            ROI estimado{" "}
-                            {stats.inversionTotal > 0
-                                ? Math.round((stats.gananciasEstimadas / stats.inversionTotal) * 100)
-                                : 0}%
-                        </p>
+
                     </div>
                     <div style={{ textAlign: "right" }}>
                         <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-3)", marginBottom: 4 }}>

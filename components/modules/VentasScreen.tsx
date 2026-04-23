@@ -2,16 +2,17 @@
 import { useState } from "react";
 import { useStore } from "@/store";
 import { fmt, fmtDate, whatsappLink, ESTADO_VENTA_LABEL } from "@/lib/utils";
-import { Badge, Sheet, Input, Select, EmptyState } from "@/components/ui";
-import { Plus, MessageCircle, FileText, DollarSign } from "lucide-react";
+import { Badge, Sheet, Input, Select, EmptyState, ConfirmDialog } from "@/components/ui";
+import { Plus, MessageCircle, FileText, DollarSign, Trash2 } from "lucide-react";
 import type { Venta } from "@/types";
 
 export default function VentasScreen() {
-    const { ventas, lotes, clientes, addVenta, updateVenta, setActiveTab } = useStore();
+    const { ventas, lotes, clientes, addVenta, updateVenta, deleteVenta, setActiveTab } = useStore();
 
     const [tab, setTab] = useState<"activas" | "historial">("activas");
     const [showForm, setShowForm] = useState(false);
     const [selected, setSelected] = useState<string | null>(null);
+    const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
     const [form, setForm] = useState({
         loteId: "", clienteId: "", cantidad: "",
@@ -231,6 +232,13 @@ export default function VentasScreen() {
                         >
                             <FileText size={14} /> Generar factura
                         </button>
+                        <button
+                            className="btn btn-ghost"
+                            style={{ width: "100%", color: "var(--color-danger)" }}
+                            onClick={() => { setConfirmDelete(selectedVenta.id); setSelected(null); }}
+                        >
+                            <Trash2 size={14} /> Eliminar venta
+                        </button>
                     </div>
                 </Sheet>
             )}
@@ -308,6 +316,15 @@ export default function VentasScreen() {
                         Registrar venta
                     </button>
                 </Sheet>
+            )}
+
+            {/* Confirmar eliminación */}
+            {confirmDelete && (
+                <ConfirmDialog
+                    message="¿Eliminar esta venta? Esta acción no se puede deshacer."
+                    onConfirm={() => { deleteVenta(confirmDelete); setConfirmDelete(null); }}
+                    onCancel={() => setConfirmDelete(null)}
+                />
             )}
 
         </div>

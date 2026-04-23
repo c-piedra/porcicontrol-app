@@ -24,6 +24,7 @@ export default function VacunasScreen() {
     const [tab, setTab] = useState<"proximas" | "historial">("proximas");
     const [showForm, setShowForm] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+    const [selectedVacuna, setSelectedVacuna] = useState<Vacuna | null>(null);
 
     const [form, setForm] = useState({
         loteId: "", nombre: "", tipo: "preventiva",
@@ -109,7 +110,12 @@ export default function VacunasScreen() {
                 shown.map((v) => {
                     const lote = getLote(v.loteId);
                     return (
-                        <div key={v.id} className="card" style={{ marginBottom: "var(--space-3)" }}>
+                        <div
+                            key={v.id}
+                            className="card"
+                            style={{ marginBottom: "var(--space-3)", cursor: "pointer" }}
+                            onClick={() => setSelectedVacuna(v)}
+                        >
                             <div style={{
                                 display: "flex", justifyContent: "space-between",
                                 alignItems: "flex-start", marginBottom: "var(--space-2)",
@@ -129,47 +135,86 @@ export default function VacunasScreen() {
                                 <Badge estado={v.estado} />
                             </div>
 
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <div>
-                                    <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-3)" }}>
-                                        Fecha: {fmtDate(v.fecha)}
+                            <div>
+                                <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-3)" }}>
+                                    Fecha: {fmtDate(v.fecha)}
+                                </p>
+                                {v.proximaFecha && (
+                                    <p style={{
+                                        fontSize: "var(--text-xs)", color: "var(--color-warning)",
+                                        fontWeight: 600, marginTop: 2,
+                                    }}>
+                                        Próxima: {daysFromNow(v.proximaFecha)}
                                     </p>
-                                    {v.proximaFecha && (
-                                        <p style={{
-                                            fontSize: "var(--text-xs)", color: "var(--color-warning)",
-                                            fontWeight: 600, marginTop: 2,
-                                        }}>
-                                            Próxima: {daysFromNow(v.proximaFecha)}
-                                        </p>
-                                    )}
-                                    {v.observaciones && (
-                                        <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-3)", marginTop: 2 }}>
-                                            {v.observaciones}
-                                        </p>
-                                    )}
-                                </div>
-                                <div style={{ display: "flex", gap: "var(--space-2)" }}>
-                                    {v.estado === "proxima" && (
-                                        <button
-                                            className="btn btn-secondary"
-                                            style={{ padding: "4px 12px", minHeight: 32, fontSize: "var(--text-xs)" }}
-                                            onClick={() => updateVacuna(v.id, { estado: "aplicada" })}
-                                        >
-                                            Aplicar
-                                        </button>
-                                    )}
-                                    <button
-                                        className="btn btn-ghost"
-                                        style={{ padding: "4px 10px", minHeight: 32 }}
-                                        onClick={() => setConfirmDelete(v.id)}
-                                    >
-                                        <Trash2 size={13} color="var(--color-danger)" />
-                                    </button>
-                                </div>
+                                )}
+                                {v.observaciones && (
+                                    <p style={{ fontSize: "var(--text-xs)", color: "var(--color-text-3)", marginTop: 2 }}>
+                                        {v.observaciones}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     );
                 })
+            )}
+
+            {/* Detalle vacuna */}
+            {selectedVacuna && (
+                <Sheet title="Detalle de vacuna" onClose={() => setSelectedVacuna(null)}>
+                    <div style={{ marginBottom: "var(--space-4)" }}>
+                        <Badge estado={selectedVacuna.estado} />
+                    </div>
+
+                    {[
+                        ["Nombre", selectedVacuna.nombre],
+                        ["Lote", getLote(selectedVacuna.loteId)?.nombre ?? "-"],
+                        ["Tipo", selectedVacuna.tipo],
+                        ["Fecha", fmtDate(selectedVacuna.fecha)],
+                        ["Próxima", selectedVacuna.proximaFecha ? daysFromNow(selectedVacuna.proximaFecha) : "-"],
+                        ["Dosis", selectedVacuna.dosis ?? "-"],
+                        ["Veterinario", selectedVacuna.veterinario ?? "-"],
+                        ["Observaciones", selectedVacuna.observaciones ?? "-"],
+                    ].map(([l, v]) => (
+                        <div key={l as string} style={{
+                            display: "flex", justifyContent: "space-between",
+                            padding: "var(--space-2) 0",
+                            borderBottom: "1px solid var(--color-border)",
+                        }}>
+                            <span style={{ fontSize: "var(--text-sm)", color: "var(--color-text-3)" }}>{l}</span>
+                            <span style={{
+                                fontSize: "var(--text-sm)", fontWeight: 600,
+                                color: "var(--color-text)", textAlign: "right", maxWidth: "60%",
+                            }}>
+                                {v}
+                            </span>
+                        </div>
+                    ))}
+
+                    <div style={{ display: "flex", gap: "var(--space-3)", marginTop: "var(--space-5)" }}>
+                        {selectedVacuna.estado === "proxima" && (
+                            <button
+                                className="btn btn-primary"
+                                style={{ flex: 1 }}
+                                onClick={() => {
+                                    updateVacuna(selectedVacuna.id, { estado: "aplicada" });
+                                    setSelectedVacuna(null);
+                                }}
+                            >
+                                Marcar aplicada
+                            </button>
+                        )}
+                        <button
+                            className="btn btn-ghost"
+                            style={{ flex: 1 }}
+                            onClick={() => {
+                                setConfirmDelete(selectedVacuna.id);
+                                setSelectedVacuna(null);
+                            }}
+                        >
+                            <Trash2 size={14} /> Eliminar
+                        </button>
+                    </div>
+                </Sheet>
             )}
 
             {/* Form Sheet */}
@@ -231,7 +276,7 @@ export default function VacunasScreen() {
                 </Sheet>
             )}
 
-            {/* Confirmar eliminación */}   
+            {/* Confirmar eliminación */}
             {confirmDelete && (
                 <ConfirmDialog
                     message="¿Eliminar este registro de vacuna?"

@@ -44,6 +44,7 @@ interface AppStore {
     // Ventas
     addVenta: (v: Omit<Venta, "id">) => Promise<void>;
     updateVenta: (id: string, data: Partial<Venta>) => Promise<void>;
+    deleteVenta: (id: string) => Promise<void>;
 
     // Pagos
     addPago: (p: Omit<Pago, "id">) => Promise<void>;
@@ -124,31 +125,24 @@ export const useStore = create<AppStore>()((set, get) => ({
         };
     },
 
-    // ─── Lotes ────────────────────────────────────────────────────────────────────
+    // ─── Lotes ────────────────────────────────────────────────────────────────
     addLote: async (lote) => {
         const tempId = uid();
-        // Actualizar UI inmediatamente
         set((s) => ({ lotes: [{ ...lote, id: tempId }, ...s.lotes] }));
-        // Sincronizar con Firestore en background
         try {
             await lotesService.add(lote);
         } catch (err) {
-            // Revertir si falla
             set((s) => ({ lotes: s.lotes.filter((l) => l.id !== tempId) }));
         }
     },
 
     updateLote: async (id, data) => {
-        // Actualizar UI inmediatamente
         set((s) => ({ lotes: s.lotes.map((l) => l.id === id ? { ...l, ...data } : l) }));
-        // Sincronizar con Firestore en background
         lotesService.update(id, data).catch(console.error);
     },
 
     deleteLote: async (id) => {
-        // Actualizar UI inmediatamente
         set((s) => ({ lotes: s.lotes.filter((l) => l.id !== id) }));
-        // Sincronizar con Firestore en background
         lotesService.delete(id).catch(console.error);
     },
 
@@ -158,15 +152,13 @@ export const useStore = create<AppStore>()((set, get) => ({
         const nuevoCosto: Costo = { ...costo, id: uid(), loteId };
         const costos = [...lote.costos, nuevoCosto];
         const inversion = lote.inversion + costo.monto;
-        // Actualizar UI inmediatamente
         set((s) => ({
             lotes: s.lotes.map((l) => l.id === loteId ? { ...l, costos, inversion } : l),
         }));
-        // Sincronizar con Firestore en background
         lotesService.update(loteId, { costos, inversion }).catch(console.error);
     },
 
-    // ─── Vacunas ──────────────────────────────────────────────────────────────────
+    // ─── Vacunas ──────────────────────────────────────────────────────────────
     addVacuna: async (v) => {
         const tempId = uid();
         set((s) => ({ vacunas: [{ ...v, id: tempId }, ...s.vacunas] }));
@@ -183,7 +175,7 @@ export const useStore = create<AppStore>()((set, get) => ({
         vacunasService.delete(id).catch(console.error);
     },
 
-    // ─── Clientes ─────────────────────────────────────────────────────────────────
+    // ─── Clientes ─────────────────────────────────────────────────────────────
     addCliente: async (c) => {
         const tempId = uid();
         set((s) => ({ clientes: [{ ...c, id: tempId }, ...s.clientes] }));
@@ -200,10 +192,24 @@ export const useStore = create<AppStore>()((set, get) => ({
         clientesService.delete(id).catch(console.error);
     },
 
-    // ─── Ventas ───────────────────────────────────────────────────────────────────
+    // ─── Ventas ───────────────────────────────────────────────────────────────
     addVenta: async (v) => {
         const tempId = uid();
         set((s) => ({ ventas: [{ ...v, id: tempId }, ...s.ventas] }));
+
+        const lote = get().lotes.find((l) => l.id === v.loteId);
+        if (lote) {
+            const nuevaCantidad = Math.max(0, lote.chanchos - v.cantidad);
+            const nuevoEstado = nuevaCantidad === 0 ? "vendido" as const : lote.estado;
+            set((s) => ({
+                lotes: s.lotes.map((l) => l.id === v.loteId
+                    ? { ...l, chanchos: nuevaCantidad, estado: nuevoEstado }
+                    : l
+                ),
+            }));
+            lotesService.update(v.loteId, { chanchos: nuevaCantidad, estado: nuevoEstado }).catch(console.error);
+        }
+
         ventasService.add(v).catch(console.error);
     },
 
@@ -212,7 +218,12 @@ export const useStore = create<AppStore>()((set, get) => ({
         ventasService.update(id, data).catch(console.error);
     },
 
-    // ─── Pagos ────────────────────────────────────────────────────────────────────
+    deleteVenta: async (id) => {
+        set((s) => ({ ventas: s.ventas.filter((v) => v.id !== id) }));
+        ventasService.delete(id).catch(console.error);
+    },
+
+    // ─── Pagos ────────────────────────────────────────────────────────────────
     addPago: async (p) => {
         const tempId = uid();
         set((s) => ({
@@ -223,7 +234,7 @@ export const useStore = create<AppStore>()((set, get) => ({
         ventasService.update(p.ventaId, { estado: "pagada" }).catch(console.error);
     },
 
-    // ─── Facturas ─────────────────────────────────────────────────────────────────
+    // ─── Facturas ─────────────────────────────────────────────────────────────
     addFactura: async (f) => {
         const tempId = uid();
         set((s) => ({ facturas: [{ ...f, id: tempId }, ...s.facturas] }));
@@ -246,6 +257,7 @@ export const useStore = create<AppStore>()((set, get) => ({
             return { settings: newSettings };
         });
     },
+
     setActiveTab: (tab) => set({ activeTab: tab }),
 
     // ─── Stats ────────────────────────────────────────────────────────────────

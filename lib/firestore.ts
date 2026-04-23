@@ -98,6 +98,9 @@ export const ventasService = {
     async update(id: string, data: Partial<Venta>): Promise<void> {
         await updateDoc(doc(db, "ventas", id), cleanData(data));
     },
+    async delete(id: string): Promise<void> {
+        await deleteDoc(doc(db, "ventas", id));
+    },
     subscribe(callback: (ventas: Venta[]) => void) {
         return onSnapshot(
             query(col("ventas"), orderBy("fecha", "desc")),
